@@ -1,35 +1,28 @@
-// Función para obtener el contenido de un notebook
-function fetchNotebookContent(notebookName) {
-    fetch(`https://pip-yc7y.onrender.com/documentos/contenido/${notebookName}`)
+document.addEventListener('DOMContentLoaded', function() {
+    fetchNotebooksList();
+});
+
+function fetchNotebooksList() {
+    fetch('https://pip-yc7y.onrender.com/documentos')
         .then(response => response.json())
         .then(data => {
-            const contentDiv = document.getElementById('content');
-            contentDiv.innerHTML = ''; // Limpiar contenido previo
+            const notebooksList = document.getElementById('notebooks-list');
+            notebooksList.innerHTML = ''; // Limpiar la lista antes de agregar los items
 
-            // Mostrar el contenido de las celdas
-            data.forEach(cell => {
-                const cellDiv = document.createElement('div');
-                if (cell.tipo === 'código') {
-                    cellDiv.innerHTML = `
-                        <strong>Celda de Código:</strong>
-                        <pre>${cell.contenido}</pre>
-                    `;
+            if (data.length === 0) {
+                notebooksList.innerHTML = '<li>No se encontraron archivos .ipynb</li>';
+                return;
+            }
 
-                    // Mostrar las salidas
-                    cell.salidas.forEach(salida => {
-                        if (salida.tipo === 'texto') {
-                            // Solo mostrar los resultados de accuracy
-                            cellDiv.innerHTML += `
-                                <strong>Resultado de Accuracy:</strong>
-                                <pre>${salida.contenido}</pre>
-                            `;
-                        }
-                    });
-                }
-                contentDiv.appendChild(cellDiv);
+            // Agregar cada archivo a la lista
+            data.forEach(notebook => {
+                const li = document.createElement('li');
+                li.textContent = notebook;
+                li.onclick = () => fetchNotebookContent(notebook);
+                notebooksList.appendChild(li);
             });
         })
         .catch(error => {
-            console.error('Error al obtener el contenido del notebook:', error);
+            console.error('Error al obtener la lista de notebooks:', error);
         });
 }
