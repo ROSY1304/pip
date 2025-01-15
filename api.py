@@ -1,4 +1,4 @@
-from flask import Flask, jsonify, send_from_directory, send_file
+from flask import Flask, jsonify, request, send_from_directory
 import os
 import nbformat
 from flask_cors import CORS
@@ -16,79 +16,74 @@ app.config['DOCUMENTS_FOLDER'] = DOCUMENTS_FOLDER
 def home():
     return send_from_directory('static', 'index.html')
 
-# Endpoint para listar los documentos disponibles
 @app.route('/documentos', methods=['GET'])
 def obtener_documentos():
     try:
-        # Validar que el directorio existe
-        if not os.path.exists(DOCUMENTS_FOLDER):
-            return jsonify({"mensaje": "El directorio de documentos no existe"}), 404
-
         archivos = [f for f in os.listdir(DOCUMENTS_FOLDER) if f.endswith('.ipynb')]
-
+        
         if not archivos:
-            return jsonify({"mensaje": "No hay archivos .ipynb en el directorio"}), 404
-
+            return jsonify({"mensaje": "No hay archivos .ipynb en el directorio."}), 404
+        
         return jsonify(archivos), 200
-    except Exception as e:
-        return jsonify({"mensaje": str(e)}), 500
+    except FileNotFoundError:
+        return jsonify({"mensaje": "No se encontró el directorio de documentos"}), 404
 
 @app.route('/documentos/contenido/<nombre>', methods=['GET'])
 def ver_contenido_documento(nombre):
     try:
         notebook_path = os.path.join(DOCUMENTS_FOLDER, nombre)
-
-        # Validar existencia del archivo
-        if not os.path.exists(notebook_path):
-            return jsonify({'mensaje': 'Archivo no encontrado'}), 404
-
-        # Validar extensión del archivo
-        if not nombre.endswith('.ipynb'):
-            return jsonify({'mensaje': 'Formato de archivo no soportado'}), 400
-
-        if nombre == 'REGRESION-Copy1.ipynb':
-            # Extraer solo la salida de la celda 146 (sin código)
+        
+        if os.path.exists(notebook_path) and nombre.endswith('.ipynb'):
             with open(notebook_path, 'r', encoding='utf-8') as f:
                 notebook_content = nbformat.read(f, as_version=4)
 
-            if len(notebook_content.cells) > 146:
-                celda = notebook_content.cells[146]
-                if celda.cell_type == 'code':
-                    salidas = procesar_salidas_celda(celda)
-                    return jsonify({'tipo': 'salidas', 'contenido': salidas}), 200
-            return jsonify({'mensaje': 'La celda 146 no existe o no contiene salidas'}), 404
+            contenido = []
+            
+            if nombre == 'REGRESION-Copy1.ipynb':
+                # Solo mostrar los valores de accuracy
+                for cell in notebook_content.cells:
+                    if cell.cell_type == 'code' and 'accuracy' in cell.source:
+                        cell_data = {
+                            'tipo': 'texto',
+                            'contenido': cell.source
+                        }
+                        contenido.append(cell_data)
+            
+            elif nombre == 'Arboles de decision.ipynb':
+                # Solo mostrar las salidas de imagen y gráficos
+                for cell in notebook_content.cells:
+                    if cell.cell_type == 'code':
+                        cell_data = {
+                            'tipo': 'código',
+                            'salidas': []
+                        }
+                        for output in cell.outputs:
+                            if 'image/png' in output['data']:
+                                cell_data['salidas'].append({
+                                    'tipo': 'imagen',
+                                    'contenido': output['data']['image/png']
+                                })
+                            elif 'application/json' in output['data']:
+                                cell_data['salidas'].append({
+                                    'tipo': 'json',
+                                    'contenido': output['data']['application/json']
+                                })
+                            elif 'text/html' in output['data']:
+                                cell_data['salidas'].append({
+                                    'tipo': 'html',
+                                    'contenido': output['data']['text/html']
+                                })
+                        if cell_data['salidas']:
+                            contenido.append(cell_data)
 
-        elif nombre == 'Arboles de decision.ipynb':
-            # Solo devolver la imagen asociada, sin mostrar celdas
-            imagen_path = '/home/rosy/Documentos/api/grafico.png'
+            else:
+                return jsonify({'mensaje': 'Este archivo no está permitido para visualización'}), 403
 
-            # Verificar si la imagen existe antes de enviarla
-            if os.path.exists(imagen_path):
-                return send_file(imagen_path, mimetype='image/png')
-
-            return jsonify({'mensaje': 'Imagen no encontrada'}), 404
-
-        return jsonify({'mensaje': 'Este archivo no está permitido para visualización'}), 403
-
+            return jsonify(contenido), 200
+        else:
+            return jsonify({'mensaje': 'Archivo no encontrado o formato incorrecto'}), 404
     except Exception as e:
         return jsonify({'mensaje': str(e)}), 500
-
-def procesar_salidas_celda(celda):
-    """
-    Procesa las salidas de una celda de código para devolverlas en formato JSON.
-    """
-    salidas = []
-    for output in celda.outputs:
-        if 'text' in output:
-            salidas.append({'tipo': 'texto', 'contenido': output['text']})
-        elif 'data' in output:
-            if 'image/png' in output['data']:
-                salidas.append({'tipo': 'imagen', 'contenido': output['data']['image/png']})
-            elif 'application/json' in output['data']:
-                salidas.append({'tipo': 'json', 'contenido': output['data']['application/json']})
-            elif 'text/html' in output['data']:
-                salidas.append({'tipo': 'html', 'contenido': output['data']['text/html']})
-    return salidas
 
 # Iniciar la aplicación
 if __name__ == '__main__':
