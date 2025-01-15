@@ -13,9 +13,35 @@ CORS(app)
 DOCUMENTS_FOLDER = 'documentos'
 app.config['DOCUMENTS_FOLDER'] = DOCUMENTS_FOLDER
 
+# Crear el directorio si no existe
+if not os.path.exists(DOCUMENTS_FOLDER):
+    os.makedirs(DOCUMENTS_FOLDER)
+
 @app.route('/')
 def home():
     return send_from_directory('static', 'index.html')
+
+
+@app.route('/documentos', methods=['GET'])
+def obtener_documentos():
+    """
+    Endpoint para obtener la lista de archivos .ipynb en el directorio configurado.
+    """
+    try:
+        # Verifica si el directorio existe y obtiene los archivos .ipynb
+        if not os.path.exists(DOCUMENTS_FOLDER):
+            return jsonify({"mensaje": "El directorio de documentos no existe."}), 404
+
+        archivos = [f for f in os.listdir(DOCUMENTS_FOLDER) if f.endswith('.ipynb')]
+
+        if not archivos:
+            return jsonify({"mensaje": "No hay archivos .ipynb en el directorio."}), 404
+
+        return jsonify(archivos), 200
+    except Exception as e:
+        return jsonify({"mensaje": f"Error al obtener los documentos: {str(e)}"}), 500
+
+
 @app.route('/documentos/contenido/<nombre>', methods=['GET'])
 def ver_contenido_documento(nombre):
     """
