@@ -39,7 +39,7 @@ function fetchNotebookContent(notebookName) {
 
             // Filtrar el contenido dependiendo del tipo de notebook
             if (notebookName === 'REGRESION-Copy1.ipynb') {
-                displayRegressionContent(data, contentDiv);
+                displayRegressionAccuracy(data, contentDiv);
             } else if (notebookName === 'Arboles de decision.ipynb') {
                 displayDecisionTreeContent(data, contentDiv);
             } else {
@@ -51,22 +51,24 @@ function fetchNotebookContent(notebookName) {
         });
 }
 
-// Mostrar solo las salidas relacionadas con "accuracy" en regresión
-function displayRegressionContent(data, contentDiv) {
+// Mostrar solo los resultados de accuracy en regresión
+function displayRegressionAccuracy(data, contentDiv) {
     data.forEach(cell => {
         if (cell.tipo === 'código') {
             const cellDiv = document.createElement('div');
             cellDiv.innerHTML = `
-                <strong>Celda de Código:</strong>
+                <strong>Resultado de Accuracy:</strong>
             `;
-            
-            // Filtrar solo los resultados de "accuracy"
+
+            // Filtrar las salidas que contengan los resultados de accuracy
             cell.salidas.forEach(salida => {
-                if (salida.tipo === 'texto' && salida.contenido.includes('accuracy')) {
-                    cellDiv.innerHTML += `
-                        <strong>Resultado de Accuracy:</strong>
-                        <pre>${salida.contenido}</pre>
-                    `;
+                if (salida.tipo === 'texto') {
+                    // Verificar si el texto contiene "accuracy" y mostrar solo ese resultado
+                    if (salida.contenido.toLowerCase().includes('accuracy')) {
+                        cellDiv.innerHTML += `
+                            <pre>${salida.contenido}</pre>
+                        `;
+                    }
                 }
             });
             contentDiv.appendChild(cellDiv);
@@ -80,14 +82,13 @@ function displayDecisionTreeContent(data, contentDiv) {
         if (cell.tipo === 'código') {
             const cellDiv = document.createElement('div');
             cellDiv.innerHTML = `
-                <strong>Celda de Código:</strong>
+                <strong>Gráfico de Árbol de Decisión:</strong>
             `;
 
             // Mostrar solo las imágenes
             cell.salidas.forEach(salida => {
                 if (salida.tipo === 'imagen') {
                     cellDiv.innerHTML += `
-                        <strong>Gráfico de Árbol de Decisión:</strong>
                         <img src="data:image/png;base64,${salida.contenido}" alt="Imagen de salida"/>
                     `;
                 }
