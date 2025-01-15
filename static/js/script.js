@@ -37,49 +37,62 @@ function fetchNotebookContent(notebookName) {
             const contentDiv = document.getElementById('content');
             contentDiv.innerHTML = ''; // Limpiar contenido previo
 
-            // Mostrar el contenido de las celdas
-            data.forEach(cell => {
-                const cellDiv = document.createElement('div');
-                if (cell.tipo === 'código') {
-                    cellDiv.innerHTML = `
-                        <strong>Celda de Código:</strong>
-                        <pre>${cell.contenido}</pre>
-                    `;
-
-                    // Mostrar las salidas
-                    cell.salidas.forEach(salida => {
-                        if (salida.tipo === 'texto') {
-                            cellDiv.innerHTML += `
-                                <strong>Salida (Texto):</strong>
-                                <pre>${salida.contenido}</pre>
-                            `;
-                        } else if (salida.tipo === 'imagen') {
-                            cellDiv.innerHTML += `
-                                <strong>Salida (Imagen):</strong>
-                                <img src="data:image/png;base64,${salida.contenido}" alt="Imagen de salida"/>
-                            `;
-                        } else if (salida.tipo === 'json') {
-                            cellDiv.innerHTML += `
-                                <strong>Salida (JSON):</strong>
-                                <pre>${JSON.stringify(salida.contenido, null, 2)}</pre>
-                            `;
-                        } else if (salida.tipo === 'html') {
-                            cellDiv.innerHTML += `
-                                <strong>Salida (HTML):</strong>
-                                <div>${salida.contenido}</div>
-                            `;
-                        }
-                    });
-                } else if (cell.tipo === 'texto') {
-                    cellDiv.innerHTML = `
-                        <strong>Celda de Markdown:</strong>
-                        <pre>${cell.contenido}</pre>
-                    `;
-                }
-                contentDiv.appendChild(cellDiv);
-            });
+            // Filtrar el contenido dependiendo del tipo de notebook
+            if (notebookName === 'REGRESION-Copy1.ipynb') {
+                displayRegressionContent(data, contentDiv);
+            } else if (notebookName === 'Arboles de decision.ipynb') {
+                displayDecisionTreeContent(data, contentDiv);
+            } else {
+                contentDiv.innerHTML = '<p>Este notebook no está permitido para visualización.</p>';
+            }
         })
         .catch(error => {
             console.error('Error al obtener el contenido del notebook:', error);
         });
+}
+
+// Mostrar solo las salidas relacionadas con "accuracy" en regresión
+function displayRegressionContent(data, contentDiv) {
+    data.forEach(cell => {
+        if (cell.tipo === 'código') {
+            const cellDiv = document.createElement('div');
+            cellDiv.innerHTML = `
+                <strong>Celda de Código:</strong>
+            `;
+            
+            // Filtrar solo los resultados de "accuracy"
+            cell.salidas.forEach(salida => {
+                if (salida.tipo === 'texto' && salida.contenido.includes('accuracy')) {
+                    cellDiv.innerHTML += `
+                        <strong>Resultado de Accuracy:</strong>
+                        <pre>${salida.contenido}</pre>
+                    `;
+                }
+            });
+            contentDiv.appendChild(cellDiv);
+        }
+    });
+}
+
+// Mostrar solo las imágenes y gráficos en el notebook de árboles de decisión
+function displayDecisionTreeContent(data, contentDiv) {
+    data.forEach(cell => {
+        if (cell.tipo === 'código') {
+            const cellDiv = document.createElement('div');
+            cellDiv.innerHTML = `
+                <strong>Celda de Código:</strong>
+            `;
+
+            // Mostrar solo las imágenes
+            cell.salidas.forEach(salida => {
+                if (salida.tipo === 'imagen') {
+                    cellDiv.innerHTML += `
+                        <strong>Gráfico de Árbol de Decisión:</strong>
+                        <img src="data:image/png;base64,${salida.contenido}" alt="Imagen de salida"/>
+                    `;
+                }
+            });
+            contentDiv.appendChild(cellDiv);
+        }
+    });
 }
