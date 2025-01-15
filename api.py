@@ -16,6 +16,24 @@ app.config['DOCUMENTS_FOLDER'] = DOCUMENTS_FOLDER
 @app.route('/')
 def home():
     return send_from_directory('static', 'index.html')
+from flask import Flask, jsonify, request, send_from_directory, render_template
+import os
+import nbformat
+from flask_cors import CORS
+import base64  # Importa el módulo base64 para codificar las imágenes
+
+app = Flask(__name__, static_folder='static')
+
+# Habilitar CORS para la aplicación completa
+CORS(app)  
+
+# Directorio donde están los documentos .ipynb
+DOCUMENTS_FOLDER = 'documentos'
+app.config['DOCUMENTS_FOLDER'] = DOCUMENTS_FOLDER
+
+@app.route('/')
+def home():
+    return send_from_directory('static', 'index.html')
 
 @app.route('/documentos', methods=['GET'])
 def obtener_documentos():
