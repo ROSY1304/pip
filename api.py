@@ -1,4 +1,4 @@
-from flask import Flask, jsonify, request, send_from_directory
+from flask import Flask, jsonify, request, send_from_directory, send_file
 import os
 import nbformat
 from flask_cors import CORS
@@ -45,37 +45,31 @@ def ver_contenido_documento(nombre):
         notebook_path = os.path.join(DOCUMENTS_FOLDER, nombre)
 
         if os.path.exists(notebook_path) and nombre.endswith('.ipynb'):
-            with open(notebook_path, 'r', encoding='utf-8') as f:
-                notebook_content = nbformat.read(f, as_version=4)
-
-            contenido = []
-
             if nombre == 'REGRESION-Copy1.ipynb':
-                # Mostrar solo la salida de la celda 146
-                if len(notebook_content.cells) >= 146:
-                    celda_146 = notebook_content.cells[145]
-                    if celda_146.cell_type == 'code':
-                        contenido = procesar_solo_salidas(celda_146)
+                # Extraer solo la última celda
+                with open(notebook_path, 'r', encoding='utf-8') as f:
+                    notebook_content = nbformat.read(f, as_version=4)
+                    if len(notebook_content.cells) >= 146:
+                        celda_146 = notebook_content.cells[145]
+                        if celda_146.cell_type == 'code':
+                            contenido = procesar_solo_salidas(celda_146)
+                        else:
+                            contenido = [{"mensaje": "La celda 146 no es de tipo código."}]
                     else:
-                        contenido = [{"mensaje": "La celda 146 no es de tipo código."}]
-                else:
-                    contenido = [{"mensaje": "El notebook no tiene suficientes celdas para mostrar la celda 146."}]
+                        contenido = [{"mensaje": "El notebook no tiene suficientes celdas para mostrar la celda 146."}]
+                return jsonify(contenido), 200
 
             elif nombre == 'Arboles de decision.ipynb':
-                # Mostrar solo la salida de la celda 74
-                if len(notebook_content.cells) >= 74:
-                    celda_74 = notebook_content.cells[73]
-                    if celda_74.cell_type == 'code':
-                        contenido = procesar_solo_salidas(celda_74)
-                    else:
-                        contenido = [{"mensaje": "La celda 74 no es de tipo código."}]
+                # Enviar la imagen especificada
+                image_path = "/home/rosy/Documentos/api/grafico.png"
+                if os.path.exists(image_path):
+                    return send_file(image_path, mimetype='image/png')
                 else:
-                    contenido = [{"mensaje": "El notebook no tiene suficientes celdas para mostrar la celda 74."}]
+                    return jsonify({'mensaje': 'La imagen especificada no se encuentra en el servidor.'}), 404
 
             else:
                 return jsonify({'mensaje': 'Este archivo no está permitido para visualización'}), 403
 
-            return jsonify(contenido), 200
         else:
             return jsonify({'mensaje': 'Archivo no encontrado o formato incorrecto'}), 404
     except Exception as e:
