@@ -38,6 +38,9 @@ def obtener_documentos():
 
 @app.route('/documentos/contenido/<nombre>', methods=['GET'])
 def ver_contenido_documento(nombre):
+    """
+    Extrae contenido específico de las celdas de los notebooks permitidos.
+    """
     try:
         notebook_path = os.path.join(DOCUMENTS_FOLDER, nombre)
 
@@ -48,18 +51,26 @@ def ver_contenido_documento(nombre):
             contenido = []
 
             if nombre == 'REGRESION-Copy1.ipynb':
-                # Extraer solo la última celda
-                ultima_celda = notebook_content.cells[-1]
-                if ultima_celda.cell_type == 'code':
-                    cell_data = procesar_celda_codigo(ultima_celda)
-                    contenido.append(cell_data)
+                # Mostrar solo la salida de la celda 146
+                if len(notebook_content.cells) >= 146:
+                    celda_146 = notebook_content.cells[145]
+                    if celda_146.cell_type == 'code':
+                        contenido = procesar_solo_salidas(celda_146)
+                    else:
+                        contenido = [{"mensaje": "La celda 146 no es de tipo código."}]
+                else:
+                    contenido = [{"mensaje": "El notebook no tiene suficientes celdas para mostrar la celda 146."}]
 
             elif nombre == 'Arboles de decision.ipynb':
-                # Extraer las dos últimas celdas
-                for celda in notebook_content.cells[-2:]:
-                    if celda.cell_type == 'code':
-                        cell_data = procesar_celda_codigo(celda)
-                        contenido.append(cell_data)
+                # Mostrar solo la salida de la celda 74
+                if len(notebook_content.cells) >= 74:
+                    celda_74 = notebook_content.cells[73]
+                    if celda_74.cell_type == 'code':
+                        contenido = procesar_solo_salidas(celda_74)
+                    else:
+                        contenido = [{"mensaje": "La celda 74 no es de tipo código."}]
+                else:
+                    contenido = [{"mensaje": "El notebook no tiene suficientes celdas para mostrar la celda 74."}]
 
             else:
                 return jsonify({'mensaje': 'Este archivo no está permitido para visualización'}), 403
@@ -70,41 +81,34 @@ def ver_contenido_documento(nombre):
     except Exception as e:
         return jsonify({'mensaje': str(e)}), 500
 
-
-def procesar_celda_codigo(celda):
+def procesar_solo_salidas(celda):
     """
-    Procesa una celda de código y sus salidas para devolver un formato JSON.
+    Procesa una celda de código para devolver solo las salidas (sin mostrar el código).
     """
-    cell_data = {
-        'tipo': 'código',
-        'contenido': celda.source,
-        'salidas': []
-    }
-
+    salidas = []
     for output in celda.outputs:
         if 'text' in output:
-            cell_data['salidas'].append({
+            salidas.append({
                 'tipo': 'texto',
                 'contenido': output['text']
             })
         elif 'data' in output:
             if 'image/png' in output['data']:
-                cell_data['salidas'].append({
+                salidas.append({
                     'tipo': 'imagen',
                     'contenido': output['data']['image/png']
                 })
             elif 'application/json' in output['data']:
-                cell_data['salidas'].append({
+                salidas.append({
                     'tipo': 'json',
                     'contenido': output['data']['application/json']
                 })
             elif 'text/html' in output['data']:
-                cell_data['salidas'].append({
+                salidas.append({
                     'tipo': 'html',
                     'contenido': output['data']['text/html']
                 })
-    return cell_data
-
+    return salidas
 
 # Iniciar la aplicación
 if __name__ == '__main__':
