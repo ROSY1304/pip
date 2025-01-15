@@ -1,31 +1,13 @@
-from flask import Flask, jsonify, request, send_from_directory, render_template
+from flask import Flask, jsonify, request, send_from_directory
 import os
 import nbformat
 from flask_cors import CORS
-import base64  # Importa el módulo base64 para codificar las imágenes
+import base64  # Importar base64 para codificar imágenes
 
 app = Flask(__name__, static_folder='static')
 
 # Habilitar CORS para la aplicación completa
-CORS(app)  
-
-# Directorio donde están los documentos .ipynb
-DOCUMENTS_FOLDER = 'documentos'
-app.config['DOCUMENTS_FOLDER'] = DOCUMENTS_FOLDER
-
-@app.route('/')
-def home():
-    return send_from_directory('static', 'index.html')
-from flask import Flask, jsonify, request, send_from_directory, render_template
-import os
-import nbformat
-from flask_cors import CORS
-import base64  # Importa el módulo base64 para codificar las imágenes
-
-app = Flask(__name__, static_folder='static')
-
-# Habilitar CORS para la aplicación completa
-CORS(app)  
+CORS(app)
 
 # Directorio donde están los documentos .ipynb
 DOCUMENTS_FOLDER = 'documentos'
@@ -37,6 +19,9 @@ def home():
 
 @app.route('/documentos', methods=['GET'])
 def obtener_documentos():
+    """
+    Endpoint para obtener la lista de archivos .ipynb en el directorio configurado.
+    """
     try:
         archivos = [f for f in os.listdir(DOCUMENTS_FOLDER) if f.endswith('.ipynb')]
         
@@ -49,6 +34,9 @@ def obtener_documentos():
 
 @app.route('/documentos/contenido/<nombre>', methods=['GET'])
 def ver_contenido_documento(nombre):
+    """
+    Endpoint para obtener el contenido de un archivo .ipynb específico.
+    """
     try:
         notebook_path = os.path.join(DOCUMENTS_FOLDER, nombre)
         
@@ -73,13 +61,14 @@ def ver_contenido_documento(nombre):
                                 'contenido': output['text']
                             })
                         elif 'data' in output:
-                            # Revisar si hay salida de imagen u otro tipo de datos
+                            # Procesar diferentes tipos de datos en las salidas
                             if 'image/png' in output['data']:
-                                # Codificar la imagen a base64 para poder enviarla como JSON
+                                # Codificar la imagen a base64 y crear una URL de datos
                                 image_base64 = base64.b64encode(output['data']['image/png']).decode('utf-8')
+                                data_url = f"data:image/png;base64,{image_base64}"
                                 cell_data['salidas'].append({
                                     'tipo': 'imagen',
-                                    'contenido': image_base64
+                                    'contenido': data_url
                                 })
                             elif 'application/json' in output['data']:
                                 cell_data['salidas'].append({
@@ -104,7 +93,6 @@ def ver_contenido_documento(nombre):
             return jsonify({'mensaje': 'Archivo no encontrado o formato incorrecto'}), 404
     except Exception as e:
         return jsonify({'mensaje': str(e)}), 500
-
 
 # Iniciar la aplicación
 if __name__ == '__main__':
