@@ -60,7 +60,13 @@ def ver_contenido_documento(nombre):
 
         elif nombre == 'Arboles de decision.ipynb':
             # Solo devolver la imagen asociada, sin mostrar celdas
-            return send_file('/home/rosy/Documentos/api/grafico.png', mimetype='image/png')
+            imagen_path = '/home/rosy/Documentos/api/grafico.png'
+
+            # Verificar si la imagen existe antes de enviarla
+            if os.path.exists(imagen_path):
+                return send_file(imagen_path, mimetype='image/png')
+
+            return jsonify({'mensaje': 'Imagen no encontrada'}), 404
 
         return jsonify({'mensaje': 'Este archivo no está permitido para visualización'}), 403
 
