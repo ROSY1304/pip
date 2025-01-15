@@ -2,6 +2,8 @@ from flask import Flask, jsonify, request, send_from_directory
 import os
 import nbformat
 from flask_cors import CORS
+import base64
+import re
 
 app = Flask(__name__, static_folder='static')
 
@@ -41,7 +43,7 @@ def ver_contenido_documento(nombre):
             contenido = []
             
             if nombre == 'REGRESION-Copy1.ipynb':
-                # Mostrar solo las salidas que contienen "accuracy"
+                # Buscar solo los valores de accuracy
                 for cell in notebook_content.cells:
                     if cell.cell_type == 'code':
                         cell_data = {
@@ -49,18 +51,21 @@ def ver_contenido_documento(nombre):
                             'contenido': cell.source,
                             'salidas': []
                         }
-                        
+
                         for output in cell.outputs:
-                            if 'text' in output:
-                                if 'accuracy' in output['text'].lower():  # Filtrar por "accuracy"
+                            if 'text/plain' in output.data:
+                                # Buscar si la salida contiene la palabra "accuracy"
+                                output_text = output['text/plain']
+                                if re.search(r'accuracy', output_text, re.IGNORECASE):
                                     cell_data['salidas'].append({
                                         'tipo': 'texto',
-                                        'contenido': output['text']
+                                        'contenido': output_text
                                     })
-                        contenido.append(cell_data)
-
+                        if cell_data['salidas']:
+                            contenido.append(cell_data)
+            
             elif nombre == 'Arboles de decision.ipynb':
-                # Mostrar solo las imágenes de salida
+                # Solo mostrar las imágenes
                 for cell in notebook_content.cells:
                     if cell.cell_type == 'code':
                         cell_data = {
@@ -72,9 +77,11 @@ def ver_contenido_documento(nombre):
                         for output in cell.outputs:
                             if 'data' in output:
                                 if 'image/png' in output['data']:
+                                    # Obtener la imagen en formato base64
+                                    img_data = output['data']['image/png']
                                     cell_data['salidas'].append({
                                         'tipo': 'imagen',
-                                        'contenido': output['data']['image/png']
+                                        'contenido': base64.b64encode(img_data.encode('utf-8')).decode('utf-8')
                                     })
                         contenido.append(cell_data)
             
