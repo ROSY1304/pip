@@ -46,11 +46,11 @@ def ver_contenido_documento(nombre):
         if not nombre.endswith('.ipynb'):
             return jsonify({'mensaje': 'Formato de archivo no soportado'}), 400
 
-        with open(notebook_path, 'r', encoding='utf-8') as f:
-            notebook_content = nbformat.read(f, as_version=4)
-
         if nombre == 'REGRESION-Copy1.ipynb':
-            # Obtener la celda 146
+            # Extraer solo la salida de la celda 146 (sin código)
+            with open(notebook_path, 'r', encoding='utf-8') as f:
+                notebook_content = nbformat.read(f, as_version=4)
+
             if len(notebook_content.cells) > 146:
                 celda = notebook_content.cells[146]
                 if celda.cell_type == 'code':
@@ -59,12 +59,8 @@ def ver_contenido_documento(nombre):
             return jsonify({'mensaje': 'La celda 146 no existe o no contiene salidas'}), 404
 
         elif nombre == 'Arboles de decision.ipynb':
-            # Devolver la imagen
-            imagen_path = '/home/rosy/Documentos/api/grafico.png'
-            if os.path.exists(imagen_path):
-                return send_file(imagen_path, mimetype='image/png')
-            else:
-                return jsonify({'mensaje': 'Imagen no encontrada'}), 404
+            # Solo devolver la imagen asociada, sin mostrar celdas
+            return send_file('/home/rosy/Documentos/api/grafico.png', mimetype='image/png')
 
         return jsonify({'mensaje': 'Este archivo no está permitido para visualización'}), 403
 
