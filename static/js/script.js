@@ -1,7 +1,9 @@
+// Función que se ejecuta cuando el DOM está listo
 document.addEventListener('DOMContentLoaded', function() {
     fetchNotebooksList();
 });
 
+// Función para obtener la lista de notebooks desde la API
 function fetchNotebooksList() {
     fetch('https://pip-yc7y.onrender.com/documentos')
         .then(response => response.json())
@@ -25,4 +27,73 @@ function fetchNotebooksList() {
         .catch(error => {
             console.error('Error al obtener la lista de notebooks:', error);
         });
+}
+
+// Función para obtener el contenido de un notebook
+function fetchNotebookContent(notebookName) {
+    fetch(`https://pip-yc7y.onrender.com/documentos/contenido/${notebookName}`)
+        .then(response => response.json())
+        .then(data => {
+            const contentDiv = document.getElementById('content');
+            contentDiv.innerHTML = ''; // Limpiar contenido previo
+
+            // Filtrar el contenido dependiendo del tipo de notebook
+            if (notebookName === 'REGRESION-Copy1.ipynb') {
+                displayRegressionAccuracy(data, contentDiv);
+            } else if (notebookName === 'Arboles de decision.ipynb') {
+                displayDecisionTreeContent(data, contentDiv);
+            } else {
+                contentDiv.innerHTML = '<p>Este notebook no está permitido para visualización.</p>';
+            }
+        })
+        .catch(error => {
+            console.error('Error al obtener el contenido del notebook:', error);
+        });
+}
+
+// Mostrar solo los resultados de accuracy en regresión
+function displayRegressionAccuracy(data, contentDiv) {
+    data.forEach(cell => {
+        if (cell.tipo === 'código') {
+            const cellDiv = document.createElement('div');
+            cellDiv.innerHTML = `
+                <strong>Resultado de Accuracy:</strong>
+            `;
+
+            // Filtrar las salidas que contengan los resultados de accuracy
+            cell.salidas.forEach(salida => {
+                if (salida.tipo === 'texto') {
+                    // Verificar si el texto contiene "accuracy" y mostrar solo ese resultado
+                    if (salida.contenido.toLowerCase().includes('accuracy')) {
+                        cellDiv.innerHTML += `
+                            <pre>${salida.contenido}</pre>
+                        `;
+                    }
+                }
+            });
+            contentDiv.appendChild(cellDiv);
+        }
+    });
+}
+
+// Mostrar solo las imágenes y gráficos en el notebook de árboles de decisión
+function displayDecisionTreeContent(data, contentDiv) {
+    data.forEach(cell => {
+        if (cell.tipo === 'código') {
+            const cellDiv = document.createElement('div');
+            cellDiv.innerHTML = `
+                <strong>Gráfico de Árbol de Decisión:</strong>
+            `;
+
+            // Mostrar solo las imágenes
+            cell.salidas.forEach(salida => {
+                if (salida.tipo === 'imagen') {
+                    cellDiv.innerHTML += `
+                        <img src="data:image/png;base64,${salida.contenido}" alt="Imagen de salida"/>
+                    `;
+                }
+            });
+            contentDiv.appendChild(cellDiv);
+        }
+    });
 }
