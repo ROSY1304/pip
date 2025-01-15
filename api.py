@@ -16,6 +16,7 @@ app.config['DOCUMENTS_FOLDER'] = DOCUMENTS_FOLDER
 def home():
     return send_from_directory('static', 'index.html')
 
+# Endpoint para listar los documentos disponibles
 @app.route('/documentos', methods=['GET'])
 def obtener_documentos():
     try:
@@ -40,45 +41,46 @@ def ver_contenido_documento(nombre):
             contenido = []
             
             if nombre == 'REGRESION-Copy1.ipynb':
-                # Solo mostrar los valores de accuracy
-                for cell in notebook_content.cells:
-                    if cell.cell_type == 'code' and 'accuracy' in cell.source:
-                        cell_data = {
-                            'tipo': 'texto',
-                            'contenido': cell.source
-                        }
-                        contenido.append(cell_data)
-            
-            elif nombre == 'Arboles de decision.ipynb':
-                # Solo mostrar las salidas de imagen y gráficos
+                # Mostrar solo las salidas que contienen "accuracy"
                 for cell in notebook_content.cells:
                     if cell.cell_type == 'code':
                         cell_data = {
                             'tipo': 'código',
+                            'contenido': cell.source,
                             'salidas': []
                         }
+                        
                         for output in cell.outputs:
-                            if 'image/png' in output['data']:
-                                cell_data['salidas'].append({
-                                    'tipo': 'imagen',
-                                    'contenido': output['data']['image/png']
-                                })
-                            elif 'application/json' in output['data']:
-                                cell_data['salidas'].append({
-                                    'tipo': 'json',
-                                    'contenido': output['data']['application/json']
-                                })
-                            elif 'text/html' in output['data']:
-                                cell_data['salidas'].append({
-                                    'tipo': 'html',
-                                    'contenido': output['data']['text/html']
-                                })
-                        if cell_data['salidas']:
-                            contenido.append(cell_data)
+                            if 'text' in output:
+                                if 'accuracy' in output['text'].lower():  # Filtrar por "accuracy"
+                                    cell_data['salidas'].append({
+                                        'tipo': 'texto',
+                                        'contenido': output['text']
+                                    })
+                        contenido.append(cell_data)
 
+            elif nombre == 'Arboles de decision.ipynb':
+                # Mostrar solo las imágenes de salida
+                for cell in notebook_content.cells:
+                    if cell.cell_type == 'code':
+                        cell_data = {
+                            'tipo': 'código',
+                            'contenido': cell.source,
+                            'salidas': []
+                        }
+                        
+                        for output in cell.outputs:
+                            if 'data' in output:
+                                if 'image/png' in output['data']:
+                                    cell_data['salidas'].append({
+                                        'tipo': 'imagen',
+                                        'contenido': output['data']['image/png']
+                                    })
+                        contenido.append(cell_data)
+            
             else:
                 return jsonify({'mensaje': 'Este archivo no está permitido para visualización'}), 403
-
+            
             return jsonify(contenido), 200
         else:
             return jsonify({'mensaje': 'Archivo no encontrado o formato incorrecto'}), 404
