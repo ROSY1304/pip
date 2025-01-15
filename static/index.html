@@ -8,7 +8,7 @@
 </head>
 <body>
     <div class="container">
-        <h1>Regresión Lineal con 50k Datos</h1>
+        <h1>Regresion Lineal con 50k Datos</h1>
 
         <!-- Lista de notebooks -->
         <div>
@@ -26,57 +26,5 @@
     </div>
 
     <script src="static/js/script.js"></script>
-    <script>
-        // Cargar la lista de notebooks al cargar la página
-        fetch('/documentos')
-            .then(response => response.json())
-            .then(data => {
-                const notebooksList = document.getElementById('notebooks-list');
-                data.forEach(notebook => {
-                    const listItem = document.createElement('li');
-                    listItem.textContent = notebook;
-                    listItem.onclick = () => loadNotebookContent(notebook);
-                    notebooksList.appendChild(listItem);
-                });
-            })
-            .catch(error => console.log('Error al cargar notebooks:', error));
-
-        // Función para cargar el contenido de un notebook
-        function loadNotebookContent(nombre) {
-            fetch(`/documentos/contenido/${nombre}`)
-                .then(response => response.json())
-                .then(data => {
-                    const contentDiv = document.getElementById('content');
-                    contentDiv.innerHTML = '';  // Limpiar contenido anterior
-
-                    if (nombre === 'REGRESION-Copy1.ipynb') {
-                        // Solo mostrar las celdas que contienen accuracy
-                        data.forEach(item => {
-                            if (item.tipo === 'texto') {
-                                contentDiv.innerHTML += `<p><strong>Resultado:</strong> ${item.contenido}</p>`;
-                            }
-                        });
-                    } else if (nombre === 'Arboles de decision.ipynb') {
-                        // Solo mostrar las imágenes y gráficos
-                        data.forEach(item => {
-                            if (item.tipo === 'código') {
-                                item.salidas.forEach(output => {
-                                    if (output.tipo === 'imagen') {
-                                        const imgElement = document.createElement('img');
-                                        imgElement.src = 'data:image/png;base64,' + output.contenido;  // Mostrar imagen en base64
-                                        contentDiv.appendChild(imgElement);
-                                    }
-                                });
-                            }
-                        });
-                    } else {
-                        contentDiv.innerHTML = '<p>Este notebook no está permitido para visualización.</p>';
-                    }
-                })
-                .catch(error => {
-                    console.log('Error al cargar contenido del notebook:', error);
-                });
-        }
-    </script>
 </body>
 </html>
